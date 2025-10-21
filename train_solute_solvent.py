@@ -110,6 +110,7 @@ def main(dump_fname, arg_values, kfolds, save_folder):
             solute_col=parameters.solute_col,
             solvents_col=parameters.solvents_col,
             solvent_fracs_col=parameters.solvent_fracs_col,
+            batch_size=parameters.batch_size,
         )
 
         if save_folder:
