@@ -1,5 +1,5 @@
 """  Train MPNN where the solvent features are included as 
-a global feature vector in the compound graph
+a global feature vector in the solute/solvents graph
 """
 
 import pickle as pk

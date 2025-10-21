@@ -21,7 +21,7 @@ from prekd.parameters import Parameters
 
 from nfp.preprocessing.features import atom_features_v2, bond_features_v1
 #from src.models.base_model import atom_features_v2, bond_features_v1
-from prekd.models.compound_solvent_weighted_model import build_train_model, build_train_model_hybrid
+from prekd.models.solute_solvent_weighted_model import build_train_model, build_train_model_hybrid
 from prekd.preprocessor import SolventFeaturesPreprocessor
 
 
@@ -65,11 +65,12 @@ def main(dump_fname, arg_values, kfolds, save_folder):
         num_messages=int(values.n_messages),
         dropout=float(values.dropout),
         batch_size=int(values.batch_size),
-        no_ratio_weights=values.no_ratio_weights,
-        prediction_columns=['log_kp'],
-        smiles_col=values.smiles_col,
-        solvent_cols=mm.solvent_cols,
-        #compound_feature_cols=mm.compound_feature_cols,
+        no_mol_frac_weights=values.no_mol_frac_weights,
+        prediction_columns=values.pred_cols,
+        solute_col=values.solute_col,
+        solvents_col=values.solvents_col,
+        solvent_fracs_col=values.solvent_fracs_col,
+        #solute_feature_cols=mm.solute_feature_cols,
         # TODO Changing the value here doesn't update what's in the mm object
         #solvent_feature_cols=mm.solvent_feature_cols,
     )
@@ -89,9 +90,9 @@ def main(dump_fname, arg_values, kfolds, save_folder):
 #        preprocessor=SolventFeaturesPreprocessor,
 #        atom_features=atom_features_v2,
 #        bond_features=bond_features_v1,
-#        compound_col=parameters.smiles_col,
+#        solute_col=parameters.smiles_col,
 #        solvent_cols=parameters.solvent_cols,
-#        compound_feature_cols=parameters.compound_feature_cols,
+#        solute_feature_cols=parameters.solute_feature_cols,
 #        solvent_feature_cols=parameters.solvent_feature_cols,
 #        solvent_feature_df=mm.solvent_feature_df,
 #    )
@@ -106,8 +107,9 @@ def main(dump_fname, arg_values, kfolds, save_folder):
             preprocessor=SolventFeaturesPreprocessor,
             atom_features=atom_features_v2,
             bond_features=bond_features_v1,
-            compound_col=parameters.smiles_col,
-            solvent_cols=parameters.solvent_cols,
+            solute_col=parameters.solute_col,
+            solvents_col=parameters.solvents_col,
+            solvent_fracs_col=parameters.solvent_fracs_col,
         )
 
         if save_folder:
@@ -116,12 +118,12 @@ def main(dump_fname, arg_values, kfolds, save_folder):
         print("\nTraining")
         mm.train_model(
             model_i=i,
-            modelbuilder=build_train_model_hybrid,
+            modelbuilder=build_train_model,
             model_params=parameters.to_dict(),
             save_folder=save_folder,
             save_training=True,
             save_report_log=True,
-            verbose=False,
+            verbose=1,
         )
     return mm
 
@@ -143,10 +145,14 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=0.05)
     parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--decay", type=float, default=1e-5)
-    parser.add_argument("--smiles_col", type=str, default=default_params.smiles_col)
-    parser.add_argument("--no_ratio_weights", action="store_true", default=False)
+    parser.add_argument("--solute_col", type=str, default=default_params.solute_col)
+    parser.add_argument("--solvents_col", type=str, default=default_params.solvents_col)
+    parser.add_argument("--solvent_fracs_col", type=str, default=default_params.solvent_fracs_col)
+    parser.add_argument("--pred_cols", type=str, default=default_params.prediction_columns)
+    parser.add_argument("--no_mol_frac_weights", action="store_true", default=False)
     values = parser.parse_args()
     values.kfolds = list(map(int, values.kfolds.split(","))) if ',' in values.kfolds else [int(values.kfolds)]
+    values.pred_cols = values.pred_cols.split(",")
     
     save_folder = values.save_folder
     kfolds = values.kfolds

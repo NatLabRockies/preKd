@@ -58,35 +58,41 @@ class Preprocessor(SmilesPreprocessor):
 
 class SolventFeaturesPreprocessor(SmilesPreprocessor):
     """Preprocessor that includes the solvent molecules in the same graph
-    The solvent ratios are included as node and edge weights.
+    The solvent mol_fractions are included as node and edge weights.
     Can also include extra solvent features as node and edge features.
 
     """
 
-    def __init__(self, atom_features, bond_features, compound_col="rdkit_canonical_smiles",
-                 solvent_cols=None,
-                 compound_feature_cols=None,
+    def __init__(self, atom_features, bond_features, solute_col="rdkit_canonical_smiles",
+                 solvents_col=None,
+                 solvent_fracs_col=None,
+                 solute_feature_cols=None,
                  df_solvent_features=None,
                  solvent_df_smiles_col="smiles", 
                  solvent_feature_cols=None,
                  ):
         super().__init__(atom_features, bond_features)
-        self.compound_col = compound_col
-        self.solvent_cols = solvent_cols
-        self.compound_feature_cols = compound_feature_cols or []  # Columns for molecular descriptors
+        self.solute_col = solute_col
+        self.solvents_col = solvents_col
+        self.solvent_fracs_col = solvent_fracs_col
+        self.solute_feature_cols = solute_feature_cols or []  # Columns for molecular descriptors
 
         self.df_solvent_features = df_solvent_features  # DataFrame with solvent descriptors
-        self.solvent_df_smiles_col = solvent_df_smiles_col
-        self.solvent_feature_cols = solvent_feature_cols or []  # Columns for solvent descriptors
-        # include the ratio as a feature 
+        #self.solvent_df_smiles_col = solvent_df_smiles_col
+        if self.df_solvent_features is not None:
+            self.df_solvent_features = self.df_solvent_features.set_index(solvent_df_smiles_col)
+        self.solvent_feature_cols = solvent_feature_cols  # Columns for solvent descriptors
+        # include the mol_fraction as a feature
         self.num_solv_feat_cols = len(self.solvent_feature_cols) + 1 if solvent_feature_cols is not None else 0
+        print(f"Number of solvent feature columns: {self.num_solv_feat_cols}")
         if self.df_solvent_features is not None:
             assert self.solvent_df_smiles_col in self.df_solvent_features.columns, \
             "'smiles' column not found in solvent feature dataframe"
             for col in self.solvent_feature_cols:
                 assert col in self.df_solvent_features.columns, f"Solvent feature column not found: {col}"
-            for solvent_col in self.solvent_cols:
-                assert solvent_col in self.df_solvent_features.index, f"Solvent {solvent_col} not found in solvent feature dataframe"
+            # if a solvent is not found, just give it all 0s
+            #for solvent_col in self.solvent_cols:
+            #    assert solvent_col in self.df_solvent_features.index, f"Solvent {solvent_col} not found in solvent feature dataframe"
 
     def create_weighted_nx_graph(self, 
                                  smiles: str,
@@ -114,96 +120,75 @@ class SolventFeaturesPreprocessor(SmilesPreprocessor):
         return nx.DiGraph(g)
 
     def create_nx_graph(self, row: pd.Series, **kwargs) -> nx.DiGraph:
-        combined_graph = self.create_weighted_nx_graph(row[self.compound_col], weight=1, **kwargs)
+        combined_graph = self.create_weighted_nx_graph(row[self.solute_col], weight=1, **kwargs)
 
         # add the global features
-        for feature_col in self.compound_feature_cols:
+        for feature_col in self.solute_feature_cols:
             assert feature_col in row, f"Feature column {feature_col} not found in row: {row}"
             combined_graph.graph[feature_col] = row[feature_col].fillna(0)
 
         # Include solvent features
-        for solvent_col in self.solvent_cols:
-            assert solvent_col in row, f"Solvent column {solvent_col} not found in row: {row}"
-            ratio = row[solvent_col]
-            if ratio == 0:
+        solvent_smiles_list = [s.strip() for s in row[self.solvents_col].split(";")]
+        mol_fractions = [float(r.strip()) for r in row[self.solvent_fracs_col].split(";")]
+        assert len(solvent_smiles_list) == len(mol_fractions), \
+            f"Number of solvents and mol_fractions do not match ({row.name = }): {solvent_smiles_list} vs {mol_fractions}"
+        # assert the solvent fractions add up to 1
+        assert np.isclose(sum(mol_fractions), 1), \
+            f"Solvent fractions do not add up to 1: " \
+            f"'{row[self.solvents_col]}', '{row[self.solvent_fracs_col]}'"
+
+        for solvent_smiles, mol_fraction in zip(solvent_smiles_list, mol_fractions):
+            if mol_fraction == 0:
                 continue
-            solvent_smiles = self.get_solvent_smiles(solvent_col)
             # the node indexes are offset so they can all be combined into one (disconnected) graph
-            solvent_graph = self.create_weighted_nx_graph(solvent_smiles, 
-                                                          weight=ratio, 
+            solvent_graph = self.create_weighted_nx_graph(solvent_smiles,
+                                                          weight=mol_fraction,
                                                           idx_offset=combined_graph.number_of_nodes(),
                                                           **kwargs)
             if self.num_solv_feat_cols > 0:
-                solvent_feature_vec = self.get_solvent_features(solvent_col, ratio=ratio)
+                solvent_feature_vec = self.get_solvent_features(solvent_smiles, mol_fraction=mol_fraction)
                 # Add solvent features to the graph, likely by including them as node (and bond?) features
-                # TODO need to line up the feature vectors for the compound and solvent graphs
+                # TODO need to line up the feature vectors for the solute and solvent graphs
                 for n, atom_data in solvent_graph.nodes(data=True):
                     atom_data["feature_vec"] = solvent_feature_vec
                 for _, _, bond_data in solvent_graph.edges(data=True):
                     bond_data["feature_vec"] = solvent_feature_vec
 
-            # add the solvent graphs to the compound graph
+            # add the solvent graphs to the solute graph
             combined_graph = nx.compose(combined_graph, solvent_graph)
-
-        # assert the solvent ratios add up to 1
-        assert np.isclose(sum(row[self.solvent_cols]), 1), \
-            f"Solvent ratios do not add up to 1: {row[self.solvent_cols]}"
 
         return combined_graph
 
-    def get_solvent_features(self, solvent_name, ratio=None):
-        """ Get the feature vector for a solvent by name. """
-        feature_vec = self.df_solvent_features.loc[solvent_name][self.solvent_feature_cols]
-        # Fill NaN values with 0
-        # raises a bunch of warnings so just fillna beforehand
-        feature_vec = feature_vec.astype(float).values
-        if ratio is not None:
-            # add the ratio to the feature vector
-            feature_vec = np.append(feature_vec, ratio)
+    def get_solvent_features(self, solvent_smiles, mol_fraction=None):
+        """ Get the feature vector for a solvent by SMILES. """
+        if solvent_smiles not in self.df_solvent_features.index:
+            # if the solvent is not found, return a vector of 0s
+            feature_vec = np.zeros(len(self.solvent_feature_cols), dtype=float)
+        else:
+            feature_vec = self.df_solvent_features.loc[solvent_smiles][self.solvent_feature_cols]
+            # Fill NaN values with 0
+            # raises a bunch of warnings so just fillna beforehand
+            feature_vec = feature_vec.astype(float).values
+        if mol_fraction is not None:
+            # add the mol_fraction to the feature vector
+            feature_vec = np.append(feature_vec, mol_fraction)
         return feature_vec
 
-    def get_solvent_feature(self, solvent_name, feature_name):
+    def get_solvent_feature(self, solvent_smiles, feature_name):
         """Get a specific feature value for a solvent."""
-        value = self.df_solvent_features.loc[solvent_name][feature_name]
+        value = self.df_solvent_features.loc[solvent_smiles][feature_name]
         if np.isnan(value):
             value = 0
         return value
-
-    def get_solvent_smiles(self, solvent_name):
-        """Get SMILES representation for a solvent by name.
-        Will check the solvent feature dataframe, and fall back on a mapping if not found.
-        """
-        if self.df_solvent_features is not None and solvent_name in self.df_solvent_features.index:
-            return self.df_solvent_features.loc[solvent_name][self.solvent_df_smiles_col]
-        else:
-            solvent_smiles_map = {
-                "water": "O",
-                "ethyl acetate": "CC(=O)OCC",
-                "ethanol": "CCO",
-                "methanol": "CO",
-                "hexane": "CCCCCC",
-                "chloroform": "ClC(Cl)Cl",
-                "petroleum ether": "CCCCC",
-                "acetonitrile": "CC#N",
-                "heptane": "CCCCCCC",
-                "acetone": "CC(=O)C",
-                "carbon tetrachloride": "ClC(Cl)(Cl)Cl",
-                "dichloromethane": "ClCCl",
-                "butanol": "CCCCO",
-                "methyl tertiary butyl ether": "CC(C)(C)OC",
-                "isopropanol": "CC(C)O",
-                # Add more solvents as needed
-            }
-            assert solvent_name in solvent_smiles_map, f"Unknown solvent: {solvent_name}"
-            return solvent_smiles_map[solvent_name]
 
     @property
     def output_signature(self):
         signature = super().output_signature
         signature["atom_weight"] = tf.TensorSpec(shape=(None,), dtype=tf.float32)
         signature["bond_weight"] = tf.TensorSpec(shape=(None,), dtype=tf.float32)
-        signature["atom_feature_vec"] = tf.TensorSpec(shape=(None,self.num_solv_feat_cols), dtype=tf.float32)
-        signature["bond_feature_vec"] = tf.TensorSpec(shape=(None,self.num_solv_feat_cols), dtype=tf.float32)
+        if self.num_solv_feat_cols > 0:
+            signature["atom_feature_vec"] = tf.TensorSpec(shape=(None,self.num_solv_feat_cols), dtype=tf.float32)
+            signature["bond_feature_vec"] = tf.TensorSpec(shape=(None,self.num_solv_feat_cols), dtype=tf.float32)
         return signature
 
     @property
@@ -211,8 +196,9 @@ class SolventFeaturesPreprocessor(SmilesPreprocessor):
         padding_values = super().padding_values
         padding_values["atom_weight"] = tf.constant(0, dtype=tf.float16)
         padding_values["bond_weight"] = tf.constant(0, dtype=tf.float16)
-        padding_values["atom_feature_vec"] = tf.constant(0, dtype=tf.float16)
-        padding_values["bond_feature_vec"] = tf.constant(0, dtype=tf.float16)
+        if self.num_solv_feat_cols > 0:
+            padding_values["atom_feature_vec"] = tf.constant(0, dtype=tf.float16)
+            padding_values["bond_feature_vec"] = tf.constant(0, dtype=tf.float16)
         return padding_values
     
     def get_edge_weights(
@@ -240,7 +226,7 @@ class SolventFeaturesPreprocessor(SmilesPreprocessor):
                 bond_feature_matrix[n] = bond_dict["feature_vec"] 
             else:
                 bond_feature_matrix[n] = np.zeros(self.num_solv_feat_cols, dtype=np.float32)
-                # The last feature is the ratio. Give a ratio of 1 for the compound
+                # The last feature is the mol_fraction. Give a mol_fraction of 1 for the solute
                 bond_feature_matrix[n][-1] = 1.0
         return {"bond_feature_vec": bond_feature_matrix}
 
@@ -311,7 +297,7 @@ class SolventFeaturesPreprocessor(SmilesPreprocessor):
         feature_matrices = {**node_features, **edge_features, 
                              **node_weights, **edge_weights, 
                              **connectivity}
-        if len(self.compound_feature_cols) > 0:
+        if len(self.solute_feature_cols) > 0:
             # add the global features
             graph_features = self.get_graph_features(nx_graph.graph)
             feature_matrices = {**feature_matrices, **graph_features}

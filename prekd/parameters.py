@@ -15,12 +15,13 @@ class Parameters:
         mol_features: int = 8,
         num_messages: int = 2,
         dropout: float = 0.05,
-        no_ratio_weights: bool = False,
+        no_mol_frac_weights: bool = False,
         #dense_layers: int = 3,
         prediction_columns: List[str] = None,
-        smiles_col: str = "compound_smiles",
-        compound_feature_cols: List[str] = None,
-        solvent_cols: List[str] = None,
+        solute_col: str = "solute_smiles",
+        solute_feature_cols: List[str] = None,
+        solvents_col: str = "solvent_smiles",
+        solvent_fracs_col: str = "solvent_mol_fractions", 
         solvent_feature_df: Union[pd.DataFrame, str, None] = None,
         solvent_feature_cols: List[str] = None,
         
@@ -53,12 +54,16 @@ class Parameters:
             Dropout rate, by default 0.05.
         prediction_columns : List[str], optional
             List of columns to be predicted.
-        smiles_col : str, optional
-            Column name for SMILES strings, by default "compound_smiles".
-        compound_feature_cols : List[str], optional
-            List of compound feature columns.
-        solvent_cols : List[str], optional
-            List of solvent columns.
+        solute_col : str, optional
+            Column name for solute SMILES strings, by default "solute_smiles".
+        solute_feature_cols : List[str], optional
+            List of solute feature columns.
+        solvents_col : str, optional
+            Column name for solvent SMILES strings, delimited by ';'. 
+            Default "solvent_smiles".
+        solvent_fracs_col : str, optional
+            Column name for solvent fractions, delimited by ';'. 
+            Default "solvent_mol_fractions".
         solvent_feature_df : pd.DataFrame or str, optional
             DataFrame (or Path) containing solvent features.
         solvent_feature_cols : List[str], optional
@@ -77,19 +82,20 @@ class Parameters:
         self.learning_rate = learning_rate
         self.dropout = dropout
         self.decay = decay
-        self.no_ratio_weights = no_ratio_weights
-        self.smiles_col = smiles_col
-        self.compound_feature_cols = compound_feature_cols
-        self.solvent_cols = solvent_cols
+        self.no_mol_frac_weights = no_mol_frac_weights
+        self.solute_col = solute_col
+        self.solute_feature_cols = solute_feature_cols
+        self.solvents_col = solvents_col
+        self.solvent_fracs_col = solvent_fracs_col
         self.solvent_feature_df = solvent_feature_df
         self.solvent_feature_cols = solvent_feature_cols
 
-        if not self.solvent_cols:
-            # default set of solvents
-            self.solvent_cols = ['water', 'ethyl acetate', 'ethanol', 'hexane', 'methanol', 'chloroform',
-                                 'petroleum ether', 'acetonitrile', 'heptane', 'acetone',
-                                 'carbon tetrachloride', 'dichloromethane', 'butanol',
-                                 'methyl tertiary butyl ether', 'isopropanol']
+        #if not self.solvents_col:
+        #    # default set of solvents
+        #    self.solvents_col = ['water', 'ethyl acetate', 'ethanol', 'hexane', 'methanol', 'chloroform',
+        #                         'petroleum ether', 'acetonitrile', 'heptane', 'acetone',
+        #                         'carbon tetrachloride', 'dichloromethane', 'butanol',
+        #                         'methyl tertiary butyl ether', 'isopropanol']
 
         if self.solvent_feature_df is not None:
             if isinstance(self.solvent_feature_df, str):
@@ -98,7 +104,7 @@ class Parameters:
             if self.solvent_feature_cols is None:
                 self.solvent_feature_cols = self.solvent_feature_df.columns.tolist
                 print("Using all solvent features by default: ", self.solvent_feature_cols)
-            for col in self.solvent_cols:
+            for col in self.solvents_col:
                 assert col in self.solvent_feature_df.index, f"Solvent {col} not found in solvent feature df."
 
         # Assign any non-default key val pairs

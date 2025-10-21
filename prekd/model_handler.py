@@ -26,12 +26,14 @@ from .models.callbacks import PandasLogger
 from .models.losses import hybrid_mae_bce_loss, mae_loss_cutoff, bce_loss_cutoff
 
 
-def generate_hash(df, hash_cols=["smiles_compound"]) -> str:
+def generate_hash(df, hash_cols=["solute_smiles", 
+                                 "solvent_smiles", 
+                                 "solvent_mol_fractions"]) -> str:
     """Function to create unique hash based on values in hash_cols. This is used to ensure data quality when merging replicate structures and multiple k-fold model predictions after generating results
 
     Args:
         df (_type_): dataframe in which to create hash values for each row
-        hash_cols (list): columns in dataframe which will be used to create hash. Defaults to 'smiles_compound'.
+        hash_cols (list): columns in dataframe which will be used to create hash. Defaults to 'solute_smiles', 'solvent_smiles', 'solvent_mol_fractions'.
 
     Returns:
         str: dataframe with hash value as index
@@ -47,7 +49,7 @@ def generate_hash(df, hash_cols=["smiles_compound"]) -> str:
 
 
 class SingleModel:
-    """Single Model for predicting compound properties
+    """Single Model for predicting Kd values
 
     Attributes
     ----------
@@ -85,9 +87,8 @@ class SingleModel:
         df_test: pd.DataFrame = None,
         data_scaler: RobustScaler = None,
         model_id: str = None,
-        compound_feature_cols: List[str] = None,
-        solvent_cols: List[str] = None,
-        solvent_feature_cols: List[str] = None,
+        solute_feature_cols: List[str] = None,
+        solvent_feature_cols = None,
         df_solvent_features = None
     ):
         """SingleModel class to train a tensor flow model with.
@@ -115,8 +116,7 @@ class SingleModel:
         self.df_loss_log = None
         self.kfold_sets = None
 
-        self.compound_feature_cols = compound_feature_cols
-        self.solvent_cols = solvent_cols
+        self.solute_feature_cols = solute_feature_cols
         self.solvent_feature_cols = solvent_feature_cols
         self.df_solvent_features = df_solvent_features
 
@@ -143,11 +143,11 @@ class SingleModel:
 #        else:
 #            # scale the prediction columns
 #            df = self._scale_data(self.df_train)
-#            if len(self.compound_feature_cols) > 0:
+#            if len(self.solute_feature_cols) > 0:
 #                # and the feature columns
 #                df = self._scale_data(df, 
 #                                      scaler=self.data_scaler_compounds,
-#                                      columns=self.compound_feature_cols,
+#                                      columns=self.solute_feature_cols,
 #                                      offset=self.scaler_offset,
 #                                      )
 #            return df
@@ -159,11 +159,11 @@ class SingleModel:
 #            return self.df_validate
 #        else:
 #            df = self._scale_data(self.df_validate)
-#            if len(self.compound_feature_cols) > 0:
+#            if len(self.solute_feature_cols) > 0:
 #                # and the feature columns
 #                df = self._scale_data(df, 
 #                                      scaler=self.data_scaler_compounds,
-#                                      columns=self.compound_feature_cols,
+#                                      columns=self.solute_feature_cols,
 #                                      offset=self.scaler_offset,
 #                                      )
 #            return df
@@ -237,8 +237,8 @@ class SingleModel:
 #        self.data_scaler = RobustScaler()
 #        self.data_scaler.fit(self.df_train[self.prediction_columns].values)
 #        self.data_scaler_compounds = RobustScaler()
-#        if len(self.compound_feature_cols) > 0:
-#            self.data_scaler_compounds.fit(self.df_train[self.compound_feature_cols].values)
+#        if len(self.solute_feature_cols) > 0:
+#            self.data_scaler_compounds.fit(self.df_train[self.solute_feature_cols].values)
 #        self.data_scaler_solvents = RobustScaler()
 #        if len(self.solvent_feature_cols) > 0:
 #            self.data_scaler_solvents.fit(self.df_solvent_features[self.solvent_feature_cols].values)
@@ -268,7 +268,7 @@ class SingleModel:
         print("Generating preprocessor")
         self.preprocessor = preprocessor(
             atom_features=atom_features, bond_features=bond_features, 
-            compound_feature_cols=self.compound_feature_cols,
+            solute_feature_cols=self.solute_feature_cols,
             solvent_feature_cols=self.solvent_feature_cols,
             df_solvent_features=self.df_solvent_features,
             **kwargs
@@ -353,7 +353,8 @@ class SingleModel:
         Parameters
         ----------
         df_prediction : pd.DataFrame
-            A dataframe containing a column of smiles labeled as "compound_smiles".
+            A dataframe containing the solute_smiles, solvent_smiles, and solvent_mol_fractions
+            columns to be used for prediction.
 
         Returns
         -------
@@ -513,10 +514,10 @@ class MultiModel:
 
         Parameters
         -------
-        df_compound: pd.DataFrame
-            The compound DataFrame used for model training.
-        df_compound_scaled: pd.DataFrame
-            The scaled compound DataFrame used for training.
+        df_kd: pd.DataFrame
+            The Kd DataFrame used for model training.
+        df_kd_scaled: pd.DataFrame
+            The scaled Kd DataFrame used for training.
         prediction_columns: List[str]
             A list of strings representing the columns to be used for training
             and prediction.
@@ -532,11 +533,9 @@ class MultiModel:
         self.models = list()
         self.data_scaler = None
 
-        self.compound_feature_cols = list()
-        self.solvent_cols = list()
-        self.solvent_feature_cols = list()
+        self.solute_feature_cols = list()
+        self.solvent_feature_cols = None
         self.df_solvent_features = None
-        return None
 
     @classmethod
     def load_models(
@@ -622,8 +621,8 @@ class MultiModel:
         return mm
 
     @property
-    def df_compound(self) -> pd.DataFrame:
-        """Returns the compound dataframe for entries containing one or more of
+    def df_kd(self) -> pd.DataFrame:
+        """Returns the Kd dataframe for entries containing one or more of
         prediction columns."""
         return self.df_input.dropna(
             subset=self.prediction_columns, how="all"
@@ -644,7 +643,7 @@ class MultiModel:
             return None
 
     def load_dataset(self, fname: str, prediction_columns: List[str]) -> None:
-        """Load a dataset of compound properties to be used for prediction.
+        """Load a dataset of Kd values of solute & solvents combinations.
 
         Parameters
         ----------
@@ -690,7 +689,7 @@ class MultiModel:
         Parameters
         ----------
         df_prediction : pd.DataFrame
-            Dataframe with a smiles_compound column that will be used to predict.
+            Dataframe with a solute_smiles column that will be used to predict.
 
         Returns
         -------
@@ -716,7 +715,7 @@ class MultiModel:
     #     Parameters
     #     ----------
     #     df_prediction : pd.DataFrame
-    #         The dataframe to predict properties based on a smiles_compound column.
+    #         The dataframe to predict properties based on a solute_smiles column.
     #     funcs : list, optional
     #         Aggregation functions used by Pandas aggregate call,
     #         by default ["mean"]
@@ -785,7 +784,7 @@ class MultiModel:
         self.models = []
         # Assign a kfold-id to each column
 
-        data = self.df_compound.copy()
+        data = self.df_kd.copy()
 
         # # Assign a data_id column to aid in kfolds; data id acts as a unique identifer for creating stratified splits. It should be a unique integer. 
         # if "data_id" not in data:
@@ -794,7 +793,7 @@ class MultiModel:
         #     data.distribution = data.distribution.fillna(0)
         #     for i, row in data.iterrows():
 
-        #         idxs = data[(data["smiles_compound"] == row.smiles_compound) & (
+        #         idxs = data[(data["solute_smiles"] == row.solute_smiles) & (
         #             data["distribution"] == row.distribution
         #         )].index.tolist()
 
@@ -839,8 +838,7 @@ class MultiModel:
                     df_validate=df_validate,
                     df_train=df_train,
                     model_id=str(i),
-                    compound_feature_cols=self.compound_feature_cols,
-                    solvent_cols=self.solvent_cols, 
+                    solute_feature_cols=self.solute_feature_cols,
                     solvent_feature_cols=self.solvent_feature_cols,
                     df_solvent_features=self.df_solvent_features,
                 )
@@ -1006,7 +1004,7 @@ class MultiModel:
             The batch size for the padded batch when creating a generator, by default 1
         """
         for model in self.models:
-            model.compound_feature_cols = self.compound_feature_cols
+            model.solute_feature_cols = self.solute_feature_cols
             model.solvent_feature_cols = self.solvent_feature_cols
             model.df_solvent_features = self.df_solvent_features
              

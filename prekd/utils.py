@@ -44,7 +44,7 @@ def write_submit_kestrel(out_dir,
 
     submit_str = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --account=robustmicrob
+#SBATCH --account=bpms
 ##SBATCH --time=1:00:00
 ##SBATCH --partition=debug
 #SBATCH --time=2-00
@@ -66,8 +66,8 @@ conda activate /home/jlaw/.conda-envs/prot
 echo "Job started at `date`"
 for ((i = {start_idx}; i < {end_idx} ; i++)); do
 apptainer run --bind $PWD:/workspace --nv \\
-    /scratch/jlaw/tensorflow/tensorflow_24_05.sif \\
-    python train_compound_solvent.py \\
+    /projects/bpms/jlaw/envs/tensorflow_24_05.sif \\
+    python train_solute_solvent.py \\
         --kfolds $i \\
         --save_folder {out_dir} \\
         --mm_dump {mm_data_file} \\
@@ -80,7 +80,10 @@ apptainer run --bind $PWD:/workspace --nv \\
         --dropout {params.dropout} \\
         --learning_rate {params.learning_rate} \\
         --decay {params.decay} \\
-        --smiles_col {params.smiles_col} \\
+        --pred_cols {','.join(params.prediction_columns)} \\
+        --solute_col {params.solute_col} \\
+        --solvents_col {params.solvents_col} \\
+        --solvent_fracs_col {params.solvent_fracs_col} \\
         &
 done
 

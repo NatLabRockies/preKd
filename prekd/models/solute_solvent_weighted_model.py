@@ -1,5 +1,5 @@
-"""  Train MPNN where the compound and solvent graphs are combined into a singel (disconnected) graph
-and the solvent ratios are included as node and edge weights
+"""  Train MPNN where the solute and solvent graphs are combined into a singel (disconnected) graph
+and the solvent fractions are included as node and edge weights
 """
 
 import pickle as pk
@@ -35,7 +35,7 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
     connectivity = Input(shape=[None, 2], dtype=tf.int64, name="connectivity")
     atom_weights_input = Input(shape=[None], dtype=tf.float32, name='atom_weight')
     bond_weights_input = Input(shape=[None], dtype=tf.float32, name='bond_weight')
-    if len(preprocessor.compound_feature_cols) > 0:
+    if len(preprocessor.solute_feature_cols) > 0:
         global_features = Input(shape=[None], dtype=tf.float32, name="global")
     if preprocessor.num_solv_feat_cols > 0:
         atom_extra_features = Input(shape=[None, preprocessor.num_solv_feat_cols], dtype=tf.float32, name="atom_feature_vec")
@@ -62,7 +62,7 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
     atom_weights = tf.expand_dims(atom_weights_input, axis=-1)
     bond_weights = tf.expand_dims(bond_weights_input, axis=-1)
 
-    # scale the atom and bond features by the solvent ratios (compound should be 1)
+    # scale the atom and bond features by the solvent fractions (solute should be 1)
     atom_state = Multiply()([atom_state, atom_weights])
     bond_state = Multiply()([bond_state, bond_weights])
 
@@ -73,8 +73,8 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
 
     ########################## Global State
     # Input values and generate the global state
-    if len(preprocessor.compound_feature_cols) > 0:
-        global_features_state = Reshape((len(preprocessor.compound_feature_cols),))(global_features)
+    if len(preprocessor.solute_feature_cols) > 0:
+        global_features_state = Reshape((len(preprocessor.solute_feature_cols),))(global_features)
         global_features_state = Dense(num_mol_features, name="global_features")(global_features_state)
         global_state = GlobalUpdate(units=num_mol_features, num_heads=1)(
             [atom_state, bond_state, connectivity, global_features_state]
@@ -91,7 +91,7 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
         params["num_messages"], num_mol_features,
     )
 
-    # scale the atom and bond features by the solvent ratios (compound should be 1)
+    # scale the atom and bond features by the solvent fractions (solute should be 1)
     atom_state = Multiply()([atom_state, atom_weights])
     bond_state = Multiply()([bond_state, bond_weights])
 
@@ -111,7 +111,7 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
     inputs = [atom_input, bond_input, connectivity, atom_weights_input, bond_weights_input]
     if preprocessor.num_solv_feat_cols > 0:
         inputs += [atom_extra_features, bond_extra_features]
-    if len(preprocessor.compound_feature_cols) > 0:
+    if len(preprocessor.solute_feature_cols) > 0:
         inputs += [global_features]
 
     model = Model(inputs, outputs)
