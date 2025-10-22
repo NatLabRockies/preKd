@@ -298,6 +298,7 @@ class SingleModel:
         save_folder: str = None,
         save_training: bool = False,
         callbacks: List = None,
+        orig_model = None,
     ) -> None:
         """Train a SingleModel
 
@@ -317,12 +318,21 @@ class SingleModel:
         save_training: bool, False
             Whether or not to save training data.
         """
-        tf_model = modelbuilder(
-            self.preprocessor,
-            model_summary=model_summary,
-            prediction_columns=self.prediction_columns,
-            params=model_params,
-        )
+        if orig_model is not None:
+            tf_model = modelbuilder(
+                orig_model,
+                self.preprocessor,
+                model_summary=model_summary,
+                prediction_columns=self.prediction_columns,
+                params=model_params,
+            )
+        else:
+            tf_model = modelbuilder(
+                self.preprocessor,
+                model_summary=model_summary,
+                prediction_columns=self.prediction_columns,
+                params=model_params,
+            )
         #print(tf_model.summary())
         #print(self.preprocessor)
 
@@ -855,6 +865,7 @@ class MultiModel:
         save_training: bool = False,
         save_report_log: bool = False,
         callbacks: List = None,
+        orig_model = None,
     ) -> None:
         """Train a single model
 
@@ -888,7 +899,8 @@ class MultiModel:
         loss_log = PandasLogger(self.models[model_i])
         callbacks_i.append(loss_log)
 
-        if save_folder:
+        if save_folder is not None:
+            save_folder = Path(save_folder)
             # checkpoint that saves the actual best models
             save_subfolder = save_folder / f"model_{model_i}"
             checkpoint = ModelCheckpoint(
@@ -913,6 +925,7 @@ class MultiModel:
             save_subfolder,
             save_training,
             callbacks_i,
+            orig_model=orig_model,
         )
 
         # #TODO delete loss callback, not sure if necessary
@@ -964,7 +977,7 @@ class MultiModel:
         callbacks: List, optional
             Callbacks for tensor flow training, by default a checkpoint and csv logger
         """
-        if save_folder:
+        if save_folder is not None:
             save_folder = Path(save_folder)
             self._save_model_state(save_folder, model_params, save_training)
 

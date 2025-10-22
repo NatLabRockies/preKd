@@ -1,4 +1,6 @@
 import subprocess
+import pickle as pk
+import gzip
 
 
 def get_job_params_str(parameters):
@@ -24,16 +26,31 @@ def read_model_data(loc_models):
     return mm_data
 
 
+def pickle_read(file):
+    """
+
+    Args:
+        file (string): location and filename with file extension
+
+    Returns:
+        _type_: stored object
+    """
+    open_func = gzip.open if str(file).endswith('.gz') else open
+    with open_func(file, 'rb') as f:
+        return pk.load(f)
+
+
 def write_submit_kestrel(out_dir,
                          mm_data_file,
                          params,
                          job_name,
+                         base_mm_data_file=None,
                          node_idx=0,
                          n_runs_per_node=5,
                          user="jlaw",
                          submit=False):
     """ Create a slurm script file that will run five of the 10 CV jobs on each kestrel GPU
-    *n*: the index of the node / GPU this job will run on
+    *node_idx*: the index of the node / GPU this job will run on
     """
     start_idx = node_idx * n_runs_per_node
     end_idx = (node_idx + 1) * n_runs_per_node
@@ -41,13 +58,19 @@ def write_submit_kestrel(out_dir,
     # mem_per_cpu_per_task = int(80 / (n_runs * num_cpus_per_task))
     out_dir.mkdir(parents=True, exist_ok=True)
     log_file = out_dir / f"log_n{node_idx}_nruns{n_runs_per_node}.txt"
+    python_script = f"python train_solute_solvent.py"
+    transfer_learning_opt = ""
+    if base_mm_data_file is not None:
+        # setup the transfer learning option
+        transfer_learning_opt = f" --base_model {base_mm_data_file}"
+        python_script = f"python train_solute_solvent_TL.py" 
 
     submit_str = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
 #SBATCH --account=bpms
-##SBATCH --time=1:00:00
 ##SBATCH --partition=debug
-#SBATCH --time=2-00
+#SBATCH --time=4:00:00
+##SBATCH --time=2-00
 #SBATCH --gres=gpu:h100:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -67,10 +90,11 @@ echo "Job started at `date`"
 for ((i = {start_idx}; i < {end_idx} ; i++)); do
 apptainer run --bind $PWD:/workspace --nv \\
     /projects/bpms/jlaw/envs/tensorflow_24_05.sif \\
-    python train_solute_solvent.py \\
+    {python_script} \\
         --kfolds $i \\
         --save_folder {out_dir} \\
         --mm_dump {mm_data_file} \\
+        {transfer_learning_opt} \\
         --n_messages {params.num_messages} \\
         --af {params.atom_features} \\
         --bf {params.bond_features} \\
