@@ -69,7 +69,7 @@ def main(dump_fname, arg_values, kfolds, save_folder):
         prediction_columns=values.pred_cols,
         solute_col=values.solute_col,
         solvents_col=values.solvents_col,
-        solvent_fracs_col=values.solvent_fracs_col,
+        solvent_fracs_col=values.solvent_fracs_col if values.solvent_fracs_col != 'None' else None,
         #solute_feature_cols=mm.solute_feature_cols,
         # TODO Changing the value here doesn't update what's in the mm object
         #solvent_feature_cols=mm.solvent_feature_cols,
