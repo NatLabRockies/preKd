@@ -62,7 +62,7 @@ class Parameters:
             Column name for solvent SMILES strings, delimited by ';'. 
             Default "solvent_smiles".
         solvent_fracs_col : str, optional
-            Column name for solvent fractions, delimited by ';'. 
+            Column name for solvent fractions (must add up to 1), delimited by ';'. 
             Default "solvent_mol_fractions".
         solvent_feature_df : pd.DataFrame or str, optional
             DataFrame (or Path) containing solvent features.

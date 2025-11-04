@@ -129,7 +129,11 @@ class SolventFeaturesPreprocessor(SmilesPreprocessor):
 
         # Include solvent features
         solvent_smiles_list = [s.strip() for s in row[self.solvents_col].split(";")]
-        mol_fractions = [float(r.strip()) for r in row[self.solvent_fracs_col].split(";")]
+        if self.solvent_fracs_col is None:
+            # if no solvent fractions are given, assume this is a single solvent (e.g., solubility)
+            mol_fractions = [1.0]
+        else:
+            mol_fractions = [float(r.strip()) for r in row[self.solvent_fracs_col].split(";")]
         assert len(solvent_smiles_list) == len(mol_fractions), \
             f"Number of solvents and mol_fractions do not match ({row.name = }): {solvent_smiles_list} vs {mol_fractions}"
         # assert the solvent fractions add up to 1

@@ -83,7 +83,7 @@ def write_submit_kestrel(out_dir,
 ##SBATCH --mail-type=ALL
 ##SBATCH --mail-user=jlaw@nrel.gov
 
-module load mamba cuda/12.2 apptainer
+module load mamba cuda/12.4 apptainer
 conda activate /home/jlaw/.conda-envs/prot
 
 echo "Job started at `date`"
