@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 
+import keras
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import (Add, Concatenate, Dense, Dropout,
@@ -103,7 +104,7 @@ def build_transfer_learning_model(base_model, preprocessor, model_summary=False,
     for prediction_column in prediction_columns:
         output_layers.append(embedding_to_output(dense_output, prediction_column))
 
-    outputs = tf.concat(output_layers, axis=-1)
+    outputs = keras.ops.concatenate(output_layers, axis=-1)
 
     model = Model(base_model.inputs, outputs)
 

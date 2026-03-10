@@ -83,32 +83,31 @@ def write_submit_kestrel(out_dir,
 ##SBATCH --mail-type=ALL
 ##SBATCH --mail-user=jlaw@nrel.gov
 
-module load mamba cuda/12.4 apptainer
-conda activate /home/jlaw/.conda-envs/prot
+module load mamba cuda
+module list
+conda activate /projects/bpms/jlaw/envs/prekd_py312_tf220
 
 echo "Job started at `date`"
 for ((i = {start_idx}; i < {end_idx} ; i++)); do
-apptainer run --bind $PWD:/workspace --nv \\
-    /projects/bpms/jlaw/envs/tensorflow_24_05.sif \\
-    {python_script} \\
-        --kfolds $i \\
-        --save_folder {out_dir} \\
-        --mm_dump {mm_data_file} \\
-        {transfer_learning_opt} \\
-        --n_messages {params.num_messages} \\
-        --af {params.atom_features} \\
-        --bf {params.bond_features} \\
-        --mf {params.mol_features} \\
-        --epochs {params.epochs} \\
-        --batch_size {params.batch_size} \\
-        --dropout {params.dropout} \\
-        --learning_rate {params.learning_rate} \\
-        --decay {params.decay} \\
-        --pred_cols {','.join(params.prediction_columns)} \\
-        --solute_col {params.solute_col} \\
-        --solvents_col {params.solvents_col} \\
-        --solvent_fracs_col {params.solvent_fracs_col} \\
-        &
+{python_script} \\
+    --kfolds $i \\
+    --save_folder {out_dir} \\
+    --mm_dump {mm_data_file} \\
+    {transfer_learning_opt} \\
+    --n_messages {params.num_messages} \\
+    --af {params.atom_features} \\
+    --bf {params.bond_features} \\
+    --mf {params.mol_features} \\
+    --epochs {params.epochs} \\
+    --batch_size {params.batch_size} \\
+    --dropout {params.dropout} \\
+    --learning_rate {params.learning_rate} \\
+    --decay {params.decay} \\
+    --pred_cols {','.join(params.prediction_columns)} \\
+    --solute_col {params.solute_col} \\
+    --solvents_col {params.solvents_col} \\
+    --solvent_fracs_col {params.solvent_fracs_col} \\
+    &
 done
 
 wait

@@ -30,7 +30,7 @@ def hybrid_mae_bce_loss(y_true, y_pred, cutoff=1.5):
     mae_loss = 0.0
     if tf.reduce_sum(tf.cast(inside_mask, tf.float32)) > 0:
         # For values inside the cutoff, use standard MAE
-        mae_loss = tf.keras.losses.mae(
+        mae_loss = tf.keras.losses.mean_absolute_error(
             tf.boolean_mask(y_true, inside_mask),
             tf.boolean_mask(y_pred, inside_mask)
         )
@@ -82,7 +82,7 @@ def mae_loss_cutoff(y_true, y_pred, cutoff=1.5):
     mae_loss = 0.0
     if tf.reduce_sum(tf.cast(inside_mask, tf.float32)) > 0:
         # For values inside the cutoff, use standard MAE
-        mae_loss = tf.keras.losses.mae(
+        mae_loss = tf.keras.losses.mean_absolute_error(
             tf.boolean_mask(y_true, inside_mask),
             tf.boolean_mask(y_pred, inside_mask)
         )

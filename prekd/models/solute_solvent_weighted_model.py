@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 
+import keras
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import (Add, Concatenate, Dense, Dropout,
@@ -59,8 +60,8 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
         mask_zero=True,
     )(bond_input)
 
-    atom_weights = tf.expand_dims(atom_weights_input, axis=-1)
-    bond_weights = tf.expand_dims(bond_weights_input, axis=-1)
+    atom_weights = keras.ops.expand_dims(atom_weights_input, axis=-1)
+    bond_weights = keras.ops.expand_dims(bond_weights_input, axis=-1)
 
     # scale the atom and bond features by the solvent fractions (solute should be 1)
     atom_state = Multiply()([atom_state, atom_weights])
@@ -103,10 +104,7 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
     for prediction_column in prediction_columns:
         output_layers.append(embedding_to_output(dense_output, prediction_column))
 
-    # 2025-04-04: This was failing when loading back a stored model if there was only one item in the list
-    #outputs = Concatenate(name="Predictions")(output_layers)
-    # this is a fix according to https://github.com/keras-team/tf-keras/issues/127
-    outputs = tf.concat(output_layers, axis=-1)
+    outputs = keras.ops.concatenate(output_layers, axis=-1)
 
     inputs = [atom_input, bond_input, connectivity, atom_weights_input, bond_weights_input]
     if preprocessor.num_solv_feat_cols > 0:

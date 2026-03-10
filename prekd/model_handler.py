@@ -15,7 +15,7 @@ import pandas as pd
 import numpy as np
 import shortuuid
 import tensorflow as tf
-from keras.models import load_model as load_keras_model
+from tensorflow.keras.models import load_model as load_keras_model
 from nfp import (EdgeUpdate, GlobalUpdate, NodeUpdate,
                  masked_mean_absolute_error)
 from sklearn import model_selection
@@ -449,7 +449,7 @@ class SingleModel:
                 .cache()
                 .shuffle(buffer_size=200)
                 .padded_batch(batch_size=batch_size)
-                .prefetch(tf.data.experimental.AUTOTUNE)
+                .prefetch(tf.data.AUTOTUNE)
             )
 
         else:  # Prediction generator
@@ -461,7 +461,7 @@ class SingleModel:
                     output_signature=self.preprocessor.output_signature,
                 )
                 .padded_batch(batch_size=batch_size)
-                .prefetch(tf.data.experimental.AUTOTUNE)
+                .prefetch(tf.data.AUTOTUNE)
             )
 
     def _scale_data(self, df, scaler=None, columns=None, offset_factor=0):

@@ -86,8 +86,6 @@ class SolventFeaturesPreprocessor(SmilesPreprocessor):
         self.num_solv_feat_cols = len(self.solvent_feature_cols) + 1 if solvent_feature_cols is not None else 0
         print(f"Number of solvent feature columns: {self.num_solv_feat_cols}")
         if self.df_solvent_features is not None:
-            assert self.solvent_df_smiles_col in self.df_solvent_features.columns, \
-            "'smiles' column not found in solvent feature dataframe"
             for col in self.solvent_feature_cols:
                 assert col in self.df_solvent_features.columns, f"Solvent feature column not found: {col}"
             # if a solvent is not found, just give it all 0s
