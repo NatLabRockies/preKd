@@ -89,6 +89,7 @@ conda activate ~/.conda-envs/prekd_py312_tf220
 
 echo "Job started at `date`"
 for ((i = {start_idx}; i < {end_idx} ; i++)); do
+mkdir -p {out_dir}/model_$i
 {python_script} \\
     --kfolds $i \\
     --save_folder {out_dir} \\
