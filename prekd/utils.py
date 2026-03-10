@@ -83,9 +83,9 @@ def write_submit_kestrel(out_dir,
 ##SBATCH --mail-type=ALL
 ##SBATCH --mail-user=jlaw@nrel.gov
 
-module load mamba cuda
+module load mamba cuda/12.9 cudnn/9.2.0.82-12
 module list
-conda activate /projects/bpms/jlaw/envs/prekd_py312_tf220
+conda activate ~/.conda-envs/prekd_py312_tf220
 
 echo "Job started at `date`"
 for ((i = {start_idx}; i < {end_idx} ; i++)); do
