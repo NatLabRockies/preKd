@@ -28,6 +28,23 @@ from .base_model import (message_passing, embedding_to_output,
                                     )
 
 
+class MaskedMultiply(tf.keras.layers.Layer):
+    """Multiply two tensors while preserving the first input mask."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.supports_masking = True
+
+    def call(self, inputs, **kwargs):
+        left, right = inputs
+        return left * right
+
+    def compute_mask(self, inputs, mask=None):
+        if mask is None:
+            return None
+        return mask[0]
+
+
 def build_weighted_model(preprocessor, model_summary, prediction_columns, params):
 
     num_mol_features = params["mol_features"]
@@ -64,8 +81,8 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
     bond_weights = keras.ops.expand_dims(bond_weights_input, axis=-1)
 
     # scale the atom and bond features by the solvent fractions (solute should be 1)
-    atom_state = Multiply()([atom_state, atom_weights])
-    bond_state = Multiply()([bond_state, bond_weights])
+    atom_state = MaskedMultiply(name="atom_weighted_embedding")([atom_state, atom_weights])
+    bond_state = MaskedMultiply(name="bond_weighted_embedding")([bond_state, bond_weights])
 
     # Add the extra features to the atom and bond states
     if preprocessor.num_solv_feat_cols > 0:
@@ -93,8 +110,8 @@ def build_weighted_model(preprocessor, model_summary, prediction_columns, params
     )
 
     # scale the atom and bond features by the solvent fractions (solute should be 1)
-    atom_state = Multiply()([atom_state, atom_weights])
-    bond_state = Multiply()([bond_state, bond_weights])
+    atom_state = MaskedMultiply(name="atom_weighted_post_mp")([atom_state, atom_weights])
+    bond_state = MaskedMultiply(name="bond_weighted_post_mp")([bond_state, bond_weights])
 
     ########################## Output Layers
     output_layers = []
