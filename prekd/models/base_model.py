@@ -119,11 +119,12 @@ def build_model(preprocessor, model_summary, prediction_columns, params):
 
 def train_model(model, params):
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=params["learning_rate"], 
+        optimizer=tf.keras.optimizers.Adam(learning_rate=params["learning_rate"],
                                            weight_decay=params["decay"],
                                            clipnorm=1.0,  # Add gradient clipping
                                            ),
         loss=[masked_mean_absolute_error],
+        jit_compile=False,
     )
     return model
 
@@ -134,12 +135,13 @@ def train_model_hybrid(model, params):
     Try removing them from the MAE and try relabeling as categorical
     """
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=params["learning_rate"], 
+        optimizer=tf.keras.optimizers.Adam(learning_rate=params["learning_rate"],
                                            weight_decay=params["decay"],
                                            clipnorm=1.0,  # Add gradient clipping
                                            ),
         loss=[hybrid_mae_bce_loss],
         metrics=[mae_loss_cutoff, bce_loss_cutoff],
+        jit_compile=False,
     )
     return model
 
