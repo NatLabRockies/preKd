@@ -24,6 +24,7 @@ from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 
 from .models.callbacks import PandasLogger
 from .models.losses import hybrid_mae_bce_loss, mae_loss_cutoff, bce_loss_cutoff
+from .models.solute_solvent_weighted_model import MaskedMultiply
 
 
 def generate_hash(df, hash_cols=["solute_smiles", 
@@ -217,6 +218,7 @@ class SingleModel:
             "hybrid_mae_bce_loss": hybrid_mae_bce_loss,
             "mae_loss_cutoff": mae_loss_cutoff, 
             "bce_loss_cutoff": bce_loss_cutoff,
+            "MaskedMultiply": MaskedMultiply,
         }
         if custom_objects:
             for key, val in custom_objects.items():
@@ -229,7 +231,11 @@ class SingleModel:
         for key, val in load_dict.items():
             setattr(model, key, val)
 
-        model.model = load_keras_model(model_fname, custom_objects=custom_objects_dict)
+        model.model = load_keras_model(
+            model_fname,
+            custom_objects=custom_objects_dict,
+            compile=False,
+        )
 
         return model
 
@@ -571,12 +577,15 @@ class MultiModel:
         MultiModel
             A MultiModel class populated with the save data.
         """
+        print("HERE")
         folder = Path(folder)
         custom_objects_dict = {
             "GlobalUpdate": GlobalUpdate,
             "EdgeUpdate": EdgeUpdate,
             "NodeUpdate": NodeUpdate,
             "masked_mean_absolute_error": masked_mean_absolute_error,
+            "MaskedMultiply": MaskedMultiply,
+            # 'ExpandDims': tf.expand_dims,
         }
 
         if custom_objects:
@@ -599,7 +608,7 @@ class MultiModel:
 
         if nmodels == None:
             for model_folder in model_folders:
-                model_path = Path(model_folder) / (model_folder.rsplit("/")[-1] + ".h5")
+                model_path = Path(model_folder) / (model_folder.rsplit("/")[-1] + ".keras")
                 data_path = Path(model_folder) / (model_folder.rsplit("/")[-1] + "_data.pk")
                 mm.models.append(
                     SingleModel.load_model(
@@ -609,7 +618,7 @@ class MultiModel:
         elif type(nmodels)==int:
             nmodels = list(np.arange(0,nmodels))
             for nmodel in nmodels:
-                model_path = Path(str(folder / 'model_{}/model_{}.h5'.format(nmodel,nmodel)))
+                model_path = Path(str(folder / 'model_{}/model_{}.keras'.format(nmodel,nmodel)))
                 data_path =  Path(str(folder / 'model_{}/model_{}_data.pk'.format(nmodel,nmodel)))
                 mm.models.append(
                     SingleModel.load_model(
@@ -618,7 +627,7 @@ class MultiModel:
                 )
         elif type(nmodels)==list:
             for nmodel in nmodels:
-                model_path = Path(str(folder / 'model_{}/model_{}.h5'.format(nmodel,nmodel)))
+                model_path = Path(str(folder / 'model_{}/model_{}.keras'.format(nmodel,nmodel)))
                 data_path =  Path(str(folder / 'model_{}/model_{}_data.pk'.format(nmodel,nmodel)))
                 mm.models.append(
                     SingleModel.load_model(
@@ -903,8 +912,9 @@ class MultiModel:
             save_folder = Path(save_folder)
             # checkpoint that saves the actual best models
             save_subfolder = save_folder / f"model_{model_i}"
+            save_subfolder.mkdir(parents=True, exist_ok=True)
             checkpoint = ModelCheckpoint(
-                str(save_subfolder / f"model_{model_i}.h5"),
+                str(save_subfolder / f"model_{model_i}.keras"),
                 save_best_only=True,
                 save_freq="epoch",
                 verbose=verbose,

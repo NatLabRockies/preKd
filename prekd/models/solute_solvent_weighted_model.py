@@ -28,6 +28,7 @@ from .base_model import (message_passing, embedding_to_output,
                                     )
 
 
+@keras.saving.register_keras_serializable(package="prekd")
 class MaskedMultiply(tf.keras.layers.Layer):
     """Multiply two tensors while preserving the first input mask."""
 
@@ -43,6 +44,13 @@ class MaskedMultiply(tf.keras.layers.Layer):
         if mask is None:
             return None
         return mask[0]
+
+    def get_config(self):
+        return super().get_config()
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 
 def build_weighted_model(preprocessor, model_summary, prediction_columns, params):
