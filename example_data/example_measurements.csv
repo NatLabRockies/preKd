@@ -1,0 +1,41 @@
+compound_name,solvent_system,solute_smiles,solvent_smiles,solvent_mol_fractions,log_kp
+vanillin,HEMWat,COc1cc(C=O)ccc1O,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,0.023
+vanillin,EtOAc:W,COc1cc(C=O)ccc1O,CC(=O)OCC;O,0.5;0.5,0.528
+vanillin,BuOH:W,COc1cc(C=O)ccc1O,CCCCO;O,0.5;0.5,0.631
+vanillin,MTBE:W,COc1cc(C=O)ccc1O,COC(C)(C)C;O,0.5;0.5,0.175
+ferulic acid,HEMWat,COc1cc(/C=C/C(=O)O)ccc1O,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,0.062
+ferulic acid,EtOAc:W,COc1cc(/C=C/C(=O)O)ccc1O,CC(=O)OCC;O,0.5;0.5,0.533
+ferulic acid,BuOH:W,COc1cc(/C=C/C(=O)O)ccc1O,CCCCO;O,0.5;0.5,0.613
+ferulic acid,MTBE:W,COc1cc(/C=C/C(=O)O)ccc1O,COC(C)(C)C;O,0.5;0.5,0.202
+caffeine,HEMWat,Cn1c(=O)c2c(ncn2C)n(C)c1=O,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,-0.98
+caffeine,EtOAc:W,Cn1c(=O)c2c(ncn2C)n(C)c1=O,CC(=O)OCC;O,0.5;0.5,-0.206
+caffeine,BuOH:W,Cn1c(=O)c2c(ncn2C)n(C)c1=O,CCCCO;O,0.5;0.5,0.076
+caffeine,MTBE:W,Cn1c(=O)c2c(ncn2C)n(C)c1=O,COC(C)(C)C;O,0.5;0.5,-0.738
+guaiacol,HEMWat,COc1ccccc1O,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,0.17
+guaiacol,EtOAc:W,COc1ccccc1O,CC(=O)OCC;O,0.5;0.5,0.652
+guaiacol,BuOH:W,COc1ccccc1O,CCCCO;O,0.5;0.5,0.74
+guaiacol,MTBE:W,COc1ccccc1O,COC(C)(C)C;O,0.5;0.5,0.314
+syringaldehyde,HEMWat,COc1cc(C=O)cc(OC)c1O,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,-0.01
+syringaldehyde,EtOAc:W,COc1cc(C=O)cc(OC)c1O,CC(=O)OCC;O,0.5;0.5,0.494
+syringaldehyde,BuOH:W,COc1cc(C=O)cc(OC)c1O,CCCCO;O,0.5;0.5,0.596
+syringaldehyde,MTBE:W,COc1cc(C=O)cc(OC)c1O,COC(C)(C)C;O,0.5;0.5,0.141
+p-coumaric acid,HEMWat,O=C(O)/C=C/c1ccc(O)cc1,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,0.096
+p-coumaric acid,EtOAc:W,O=C(O)/C=C/c1ccc(O)cc1,CC(=O)OCC;O,0.5;0.5,0.567
+p-coumaric acid,BuOH:W,O=C(O)/C=C/c1ccc(O)cc1,CCCCO;O,0.5;0.5,0.648
+p-coumaric acid,MTBE:W,O=C(O)/C=C/c1ccc(O)cc1,COC(C)(C)C;O,0.5;0.5,0.236
+catechol,HEMWat,Oc1ccccc1O,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,-0.001
+catechol,EtOAc:W,Oc1ccccc1O,CC(=O)OCC;O,0.5;0.5,0.517
+catechol,BuOH:W,Oc1ccccc1O,CCCCO;O,0.5;0.5,0.63
+catechol,MTBE:W,Oc1ccccc1O,COC(C)(C)C;O,0.5;0.5,0.155
+benzoic acid,HEMWat,O=C(O)c1ccccc1,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,0.132
+benzoic acid,EtOAc:W,O=C(O)c1ccccc1,CC(=O)OCC;O,0.5;0.5,0.616
+benzoic acid,BuOH:W,O=C(O)c1ccccc1,CCCCO;O,0.5;0.5,0.705
+benzoic acid,MTBE:W,O=C(O)c1ccccc1,COC(C)(C)C;O,0.5;0.5,0.277
+naringenin,HEMWat,O=C1CC(c2ccc(O)cc2)Oc2cc(O)cc(O)c21,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,0.406
+naringenin,EtOAc:W,O=C1CC(c2ccc(O)cc2)Oc2cc(O)cc(O)c21,CC(=O)OCC;O,0.5;0.5,0.755
+naringenin,BuOH:W,O=C1CC(c2ccc(O)cc2)Oc2cc(O)cc(O)c21,CCCCO;O,0.5;0.5,0.754
+naringenin,MTBE:W,O=C1CC(c2ccc(O)cc2)Oc2cc(O)cc(O)c21,COC(C)(C)C;O,0.5;0.5,0.506
+eugenol,HEMWat,C=CCc1ccc(O)c(OC)c1,CCCCCC;CC(=O)OCC;CO;O,0.25;0.25;0.25;0.25,0.476
+eugenol,EtOAc:W,C=CCc1ccc(O)c(OC)c1,CC(=O)OCC;O,0.5;0.5,0.871
+eugenol,BuOH:W,C=CCc1ccc(O)c(OC)c1,CCCCO;O,0.5;0.5,0.901
+eugenol,MTBE:W,C=CCc1ccc(O)c(OC)c1,COC(C)(C)C;O,0.5;0.5,0.591

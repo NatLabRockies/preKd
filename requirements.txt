@@ -1,0 +1,12 @@
+# pip equivalent of environment.yml; TensorFlow and RDKit install more reliably
+# from conda, so environment.yml is the recommended route.
+pandas
+numpy
+rdkit
+scikit-learn
+tqdm
+networkx
+shortuuid
+tensorflow==2.20.*
+# PreKd needs the TF 2.20 / Keras 3 branch of nfp, which is not published on PyPI.
+nfp @ git+https://github.com/NREL/nfp.git@8500673ad11a34a438c4f62a23a149cc100ac440

@@ -56,6 +56,10 @@ def main(dump_fname, arg_values, kfolds, save_folder):
 
     print(f"Loading data from {dump_fname}")
     mm = MultiModel().load_training_data(dump_fname)
+    if values.pred_cols is None:
+        # prepare_data.py recorded the target columns in the dump
+        values.pred_cols = list(mm.prediction_columns)
+        print(f"Using prediction columns from the dump: {values.pred_cols}")
     print(f"{len(mm.df_input)} rows in input df")
     print(mm.df_input.head(2))
     #feat_cols = mm.solv_feat_cols
@@ -152,7 +156,7 @@ if __name__ == "__main__":
     parser.add_argument("--mm_dump", default=None)
     parser.add_argument("--n_messages", type=int, default=default_params.num_messages)
     parser.add_argument("--af", type=int, default=default_params.atom_features)
-    parser.add_argument("--bf", type=int, default=default_params.atom_features)
+    parser.add_argument("--bf", type=int, default=default_params.bond_features)
     parser.add_argument("--mf", type=int, default=default_params.mol_features)
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=64)
@@ -170,7 +174,8 @@ if __name__ == "__main__":
     parser.add_argument("--no_mol_frac_weights", action="store_true", default=False)
     values = parser.parse_args()
     values.kfolds = list(map(int, values.kfolds.split(","))) if ',' in values.kfolds else [int(values.kfolds)]
-    values.pred_cols = values.pred_cols.split(",")
+    # Left as None here; main() falls back to the targets stored in the dump
+    values.pred_cols = values.pred_cols.split(",") if values.pred_cols else None
     
     save_folder = values.save_folder
     kfolds = values.kfolds

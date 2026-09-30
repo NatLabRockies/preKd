@@ -583,7 +583,6 @@ class MultiModel:
         MultiModel
             A MultiModel class populated with the save data.
         """
-        print("HERE")
         folder = Path(folder)
         custom_objects_dict = {
             "GlobalUpdate": GlobalUpdate,

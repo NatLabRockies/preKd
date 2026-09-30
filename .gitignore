@@ -1,1 +1,34 @@
-*pycache*
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+.ipynb_checkpoints/
+
+# Environments
+/.venv/
+/venv/
+/env/
+
+# Trained models, prepared data and run outputs
+/models/
+/lightning_logs/
+*.pk
+*.keras
+*.h5
+*.ckpt
+*.cleaned.csv
+/predictions.csv
+
+# Cluster / job artifacts
+slurm-*.out
+*submit*.sh
+log_n*.txt
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store

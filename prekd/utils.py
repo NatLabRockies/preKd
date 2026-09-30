@@ -1,3 +1,4 @@
+import os
 import subprocess
 import pickle as pk
 import gzip
@@ -43,56 +44,106 @@ def pickle_read(file):
         return pk.load(f)
 
 
-def write_submit_kestrel(out_dir,
-                         mm_data_file,
-                         params,
-                         job_name,
-                         base_mm_data_file=None,
-                         node_idx=0,
-                         n_runs_per_node=5,
-                         user="jlaw",
-                         submit=False):
-    """ Create a slurm script file that will run five of the 10 CV jobs on each kestrel GPU
-    *node_idx*: the index of the node / GPU this job will run on
+def write_slurm_submit(out_dir,
+                       mm_data_file,
+                       params,
+                       job_name,
+                       base_mm_data_file=None,
+                       node_idx=0,
+                       n_runs_per_node=5,
+                       account=None,
+                       partition=None,
+                       time_limit="4:00:00",
+                       gres="gpu:1",
+                       cpus_per_task=26,
+                       mem="80GB",
+                       env_setup=None,
+                       submit=False):
+    """Write a SLURM script that runs ``n_runs_per_node`` of the CV folds on one GPU node.
+
+    Cluster-specific settings are parameters rather than hard-coded values, so this
+    helper is portable. Each may also be supplied through an environment variable:
+
+    ======================  ==============================  =========================
+    argument                environment variable            example
+    ======================  ==============================  =========================
+    ``account``             ``PREKD_SLURM_ACCOUNT``         ``my_allocation``
+    ``partition``           ``PREKD_SLURM_PARTITION``       ``gpu``
+    ``gres``                ``PREKD_SLURM_GRES``            ``gpu:h100:1``
+    ``env_setup``           ``PREKD_ENV_SETUP``             ``module load cuda; conda activate prekd``
+    ======================  ==============================  =========================
+
+    Parameters
+    ----------
+    out_dir : Path
+        Directory the submit script, logs and trained models are written to.
+    mm_data_file : Path
+        The training-data dump produced by ``prepare_data.py``.
+    params : Parameters
+        Model/training parameters used to build the command line.
+    job_name : str
+        SLURM job name.
+    base_mm_data_file : Path, optional
+        If given, run transfer learning from this base model instead.
+    node_idx : int, optional
+        Index of the node this script runs on, by default 0.
+    n_runs_per_node : int, optional
+        How many folds to run concurrently on the node, by default 5.
+    env_setup : str or list of str, optional
+        Shell lines placed before the training command, e.g. ``module load`` and
+        the activation of your Python environment.
+    submit : bool, optional
+        Submit the script with ``sbatch`` after writing it, by default False.
+
+    Returns
+    -------
+    Path
+        The submit script that was written.
     """
+    account = account if account is not None else os.environ.get("PREKD_SLURM_ACCOUNT")
+    partition = partition if partition is not None else os.environ.get("PREKD_SLURM_PARTITION")
+    gres = os.environ.get("PREKD_SLURM_GRES", gres)
+    if env_setup is None:
+        env_setup = os.environ.get("PREKD_ENV_SETUP", "")
+    if isinstance(env_setup, (list, tuple)):
+        env_setup = "\n".join(env_setup)
+
     start_idx = node_idx * n_runs_per_node
     end_idx = (node_idx + 1) * n_runs_per_node
-    # num_cpus_per_task = 4
-    # mem_per_cpu_per_task = int(80 / (n_runs * num_cpus_per_task))
     out_dir.mkdir(parents=True, exist_ok=True)
     log_file = out_dir / f"log_n{node_idx}_nruns{n_runs_per_node}.txt"
-    python_script = f"python train_solute_solvent.py"
+    python_script = "python train_solute_solvent.py"
     transfer_learning_opt = ""
     hybrid_opt = ""
     if base_mm_data_file is not None:
         # setup the transfer learning option
         transfer_learning_opt = f" --base_model {base_mm_data_file}"
-        python_script = f"python train_solute_solvent_TL.py" 
+        python_script = "python train_solute_solvent_TL.py"
 
     if getattr(params, "use_hybrid_loss", False):
         hybrid_opt = " --use_hybrid_loss"
 
+    # Only emit the optional directives that were actually configured
+    optional_directives = ""
+    if account:
+        optional_directives += f"#SBATCH --account={account}\n"
+    if partition:
+        optional_directives += f"#SBATCH --partition={partition}\n"
+
     submit_str = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --account=bpms
-##SBATCH --partition=debug
-#SBATCH --time=4:00:00
-##SBATCH --time=2-00
-#SBATCH --gres=gpu:h100:1
+{optional_directives}#SBATCH --time={time_limit}
+#SBATCH --gres={gres}
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-# Reserve 1/4 of the GPU node's CPUs and memory for a single GPU
-#SBATCH --cpus-per-task=26
-#SBATCH --mem=80GB
+#SBATCH --cpus-per-task={cpus_per_task}
+#SBATCH --mem={mem}
 #SBATCH --output={log_file}
 #SBATCH --error={log_file}
 #SBATCH --open-mode=append
-##SBATCH --mail-type=ALL
-##SBATCH --mail-user=jlaw@nrel.gov
 
-module load mamba cuda/12.9 cudnn/9.2.0.82-12
-module list
-conda activate ~/.conda-envs/prekd_py312_tf220
+# Environment setup (see the env_setup argument / PREKD_ENV_SETUP)
+{env_setup}
 
 echo "Job started at `date`"
 for ((i = {start_idx}; i < {end_idx} ; i++)); do
@@ -137,3 +188,7 @@ echo "Job finished at `date`"
         subprocess.check_call(cmd, shell=True)
 
     return submit_file
+
+
+# Backwards-compatible alias for the previous cluster-specific name
+write_submit_kestrel = write_slurm_submit

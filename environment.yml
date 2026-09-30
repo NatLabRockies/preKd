@@ -3,16 +3,19 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.10
+  - python=3.12
   - pandas
   - numpy
   - rdkit
   - scikit-learn
   - tqdm
-  - cudatoolkit
+  - networkx
+  - shortuuid
   - ipykernel
   - jupyterlab
   - tensorflow=2.20
   - pip
   - pip:
-    - nfp
+    # PreKd needs the TF 2.20 / Keras 3 branch of nfp, which is not on PyPI.
+    # The release of nfp on PyPI (0.3.x) predates Keras 3 and will fail at model build.
+    - nfp @ git+https://github.com/NREL/nfp.git@8500673ad11a34a438c4f62a23a149cc100ac440
