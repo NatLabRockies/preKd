@@ -188,4 +188,4 @@ which training compounds a query most resembles.
 
 ## License
 
-BSD 3-Clause. See [LICENSE](LICENSE).
+BSD 3-Clause. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
