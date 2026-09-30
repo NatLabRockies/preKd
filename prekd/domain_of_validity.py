@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdFingerprintGenerator
 from rdkit import DataStructs
 from tqdm import tqdm
 from typing import List, Union
@@ -25,6 +26,7 @@ class DoV:
         self.solvent_col = solvent_col
         self.solvent_frac_col = solvent_frac_col
         self.radius = radius
+        self.mfpgen = rdFingerprintGenerator.GetMorganGenerator(radius=self.radius, fpSize=2048)
 
     def _parse_solvent_list(self, value: Union[str, List[str]]) -> List[str]:
         """Parse solvent SMILES from various formats.
@@ -94,7 +96,7 @@ class DoV:
         """
 
         mol = Chem.MolFromSmiles(smiles)
-        fp = AllChem.GetMorganFingerprint(mol, self.radius, useFeatures=False)
+        fp = self.mfpgen.GetSparseCountFingerprint(mol)
         fp = pd.Series(fp.GetNonzeroElements(), name=smiles)
         return fp
 
@@ -111,7 +113,8 @@ class DoV:
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             return np.zeros(nbits)
-        fp = AllChem.GetMorganFingerprintAsBitVect(mol, self.radius, nBits=nbits)
+        # fp = AllChem.GetMorganFingerprintAsBitVect(mol, self.radius, nBits=nbits)
+        fp = self.mfpgen.GetFingerprint(mol)
         return np.array(fp)
 
     def get_mixture_fp_bitvector(self, smiles_list: Union[str, List[str]], 

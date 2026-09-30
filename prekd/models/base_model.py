@@ -21,7 +21,12 @@ from nfp import (EdgeUpdate, GlobalUpdate, NodeUpdate,
                  masked_mean_absolute_error, RBFExpansion)
 from nfp.preprocessing.mol_preprocessor import SmilesPreprocessor
 
-from .losses import hybrid_mae_bce_loss, mae_loss_cutoff, bce_loss_cutoff
+from .losses import (
+    WeightedHybridMaeBceLoss,
+    hybrid_mae_bce_loss,
+    mae_loss_cutoff,
+    bce_loss_cutoff,
+)
 
 
 
@@ -134,12 +139,15 @@ def train_model_hybrid(model, params):
     Above and blow 1.5 and -1.5 are more analytical errors, limitations of the instrument
     Try removing them from the MAE and try relabeling as categorical
     """
+    hybrid_cutoff = float(params.get("hybrid_cutoff", 1.5))
+    hybrid_bce_weight = float(params.get("hybrid_bce_weight", 0.5))
+
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=params["learning_rate"],
                                            weight_decay=params["decay"],
                                            clipnorm=1.0,  # Add gradient clipping
                                            ),
-        loss=[hybrid_mae_bce_loss],
+        loss=[WeightedHybridMaeBceLoss(cutoff=hybrid_cutoff, bce_weight=hybrid_bce_weight)],
         metrics=[mae_loss_cutoff, bce_loss_cutoff],
         jit_compile=False,
     )

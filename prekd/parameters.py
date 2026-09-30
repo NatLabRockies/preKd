@@ -15,6 +15,10 @@ class Parameters:
         mol_features: int = 8,
         num_messages: int = 2,
         dropout: float = 0.05,
+        seed: int = 0,
+        use_hybrid_loss: bool = False,
+        hybrid_cutoff: float = 1.5,
+        hybrid_bce_weight: float = 0.5,
         no_mol_frac_weights: bool = False,
         #dense_layers: int = 3,
         prediction_columns: List[str] = None,
@@ -81,6 +85,10 @@ class Parameters:
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.dropout = dropout
+        self.seed = seed
+        self.use_hybrid_loss = use_hybrid_loss
+        self.hybrid_cutoff = hybrid_cutoff
+        self.hybrid_bce_weight = hybrid_bce_weight
         self.decay = decay
         self.no_mol_frac_weights = no_mol_frac_weights
         self.solute_col = solute_col

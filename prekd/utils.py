@@ -12,6 +12,9 @@ def get_job_params_str(parameters):
                "_dc" + f"{parameters.decay:1.0e}" +
                "_e" + str(parameters.epochs)
               )
+    if getattr(parameters, "use_hybrid_loss", False):
+        bce_weight = getattr(parameters, "hybrid_bce_weight", 0.5)
+        job_str += "_hb" + f"{bce_weight:.2f}".replace(".", "p")
     return job_str
 
 
@@ -60,10 +63,14 @@ def write_submit_kestrel(out_dir,
     log_file = out_dir / f"log_n{node_idx}_nruns{n_runs_per_node}.txt"
     python_script = f"python train_solute_solvent.py"
     transfer_learning_opt = ""
+    hybrid_opt = ""
     if base_mm_data_file is not None:
         # setup the transfer learning option
         transfer_learning_opt = f" --base_model {base_mm_data_file}"
         python_script = f"python train_solute_solvent_TL.py" 
+
+    if getattr(params, "use_hybrid_loss", False):
+        hybrid_opt = " --use_hybrid_loss"
 
     submit_str = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
@@ -104,6 +111,10 @@ mkdir -p {out_dir}/model_$i
     --dropout {params.dropout} \\
     --learning_rate {params.learning_rate} \\
     --decay {params.decay} \\
+    --hybrid_cutoff {getattr(params, 'hybrid_cutoff', 1.5)} \\
+    --hybrid_bce_weight {getattr(params, 'hybrid_bce_weight', 0.5)} \\
+    --seed {getattr(params, 'seed', 0)} \\
+    {hybrid_opt} \\
     --pred_cols {','.join(params.prediction_columns)} \\
     --solute_col {params.solute_col} \\
     --solvents_col {params.solvents_col} \\

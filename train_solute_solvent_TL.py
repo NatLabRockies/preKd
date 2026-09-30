@@ -74,6 +74,9 @@ def main(dump_fname, arg_values, kfolds, save_folder):
     params_file = loc_models / 'parameters_object.pk'
     print(f"reading parameters from {params_file}")
     parameters = utils.pickle_read(params_file)
+    parameters.use_hybrid_loss = bool(values.use_hybrid_loss)
+    parameters.hybrid_cutoff = float(values.hybrid_cutoff)
+    parameters.hybrid_bce_weight = float(values.hybrid_bce_weight)
 
     # parameters = Parameters(
     #     epochs=int(values.epochs),
@@ -193,6 +196,9 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=0.05)
     parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--decay", type=float, default=1e-5)
+    parser.add_argument("--use_hybrid_loss", action="store_true", default=True)
+    parser.add_argument("--hybrid_cutoff", type=float, default=1.5)
+    parser.add_argument("--hybrid_bce_weight", type=float, default=0.5)
     parser.add_argument("--solute_col", type=str, default=default_params.solute_col)
     parser.add_argument("--solvents_col", type=str, default=default_params.solvents_col)
     parser.add_argument("--solvent_fracs_col", type=str, default=default_params.solvent_fracs_col)

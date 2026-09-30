@@ -2,6 +2,7 @@
 """
 
 import pickle as pk
+import random
 from argparse import ArgumentParser
 from pathlib import Path
 from shutil import copy
@@ -41,8 +42,15 @@ for gpu in gpus:
 
 ########################################################################################
 # Training Code
+def set_global_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
+
+
 def main(dump_fname, arg_values, kfolds, save_folder):
     values = arg_values
+    set_global_seed(int(values.seed))
 
     dump_fname = Path(dump_fname)
 
@@ -64,6 +72,10 @@ def main(dump_fname, arg_values, kfolds, save_folder):
         mol_features=int(values.mf),
         num_messages=int(values.n_messages),
         dropout=float(values.dropout),
+        seed=int(values.seed),
+        use_hybrid_loss=bool(values.use_hybrid_loss),
+        hybrid_cutoff=float(values.hybrid_cutoff),
+        hybrid_bce_weight=float(values.hybrid_bce_weight),
         batch_size=int(values.batch_size),
         no_mol_frac_weights=values.no_mol_frac_weights,
         prediction_columns=values.pred_cols,
@@ -117,9 +129,10 @@ def main(dump_fname, arg_values, kfolds, save_folder):
             mm._save_model_state(save_folder, parameters.to_dict(), True)
 
         print("\nTraining")
+        modelbuilder = build_train_model_hybrid if parameters.use_hybrid_loss else build_train_model
         mm.train_model(
             model_i=i,
-            modelbuilder=build_train_model,
+            modelbuilder=modelbuilder,
             model_params=parameters.to_dict(),
             save_folder=save_folder,
             save_training=True,
@@ -146,6 +159,10 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=0.05)
     parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--decay", type=float, default=1e-5)
+    parser.add_argument("--use_hybrid_loss", action="store_true", default=False)
+    parser.add_argument("--hybrid_cutoff", type=float, default=1.5)
+    parser.add_argument("--hybrid_bce_weight", type=float, default=0.5)
+    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--solute_col", type=str, default=default_params.solute_col)
     parser.add_argument("--solvents_col", type=str, default=default_params.solvents_col)
     parser.add_argument("--solvent_fracs_col", type=str, default=default_params.solvent_fracs_col)

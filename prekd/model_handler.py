@@ -23,7 +23,12 @@ from sklearn.preprocessing import RobustScaler
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 
 from .models.callbacks import PandasLogger
-from .models.losses import hybrid_mae_bce_loss, mae_loss_cutoff, bce_loss_cutoff
+from .models.losses import (
+    WeightedHybridMaeBceLoss,
+    hybrid_mae_bce_loss,
+    mae_loss_cutoff,
+    bce_loss_cutoff,
+)
 from .models.solute_solvent_weighted_model import MaskedMultiply
 
 
@@ -215,6 +220,7 @@ class SingleModel:
             "EdgeUpdate": EdgeUpdate,
             "NodeUpdate": NodeUpdate,
             "masked_mean_absolute_error": masked_mean_absolute_error,
+            "WeightedHybridMaeBceLoss": WeightedHybridMaeBceLoss,
             "hybrid_mae_bce_loss": hybrid_mae_bce_loss,
             "mae_loss_cutoff": mae_loss_cutoff, 
             "bce_loss_cutoff": bce_loss_cutoff,
@@ -584,6 +590,10 @@ class MultiModel:
             "EdgeUpdate": EdgeUpdate,
             "NodeUpdate": NodeUpdate,
             "masked_mean_absolute_error": masked_mean_absolute_error,
+            "WeightedHybridMaeBceLoss": WeightedHybridMaeBceLoss,
+            "hybrid_mae_bce_loss": hybrid_mae_bce_loss,
+            "mae_loss_cutoff": mae_loss_cutoff,
+            "bce_loss_cutoff": bce_loss_cutoff,
             "MaskedMultiply": MaskedMultiply,
             # 'ExpandDims': tf.expand_dims,
         }
