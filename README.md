@@ -33,6 +33,13 @@ conda activate preKd
 pip install -e .
 ```
 
+To use PreKd as a dependency of another project (without cloning), install it
+straight from GitHub:
+
+```bash
+pip install "prekd @ git+https://github.com/NatLabRockies/preKd.git"
+```
+
 A GPU is recommended for training but is not required; prediction runs fine on
 CPU.
 

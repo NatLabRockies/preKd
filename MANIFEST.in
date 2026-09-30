@@ -1,0 +1,3 @@
+include versioneer.py
+include prekd/_version.py
+include LICENSE NOTICE README.md
